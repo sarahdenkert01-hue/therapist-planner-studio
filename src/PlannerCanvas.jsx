@@ -7,6 +7,10 @@ const WIDTH = 1536;
 const HEIGHT = 2048; 
 const VIEW_SCALE = 0.35; 
 
+// --- 1. THE VAULT (License Key Logic) ---
+const rawKeys = import.meta.env.VITE_LICENSE_KEYS || "";
+const VALID_KEYS = rawKeys.split(",").map(k => k.trim().toUpperCase());
+
 const GRID_CONFIG = { startX: 253, startY: 330, sqWidth: 168, sqHeight: 200 };
 const TAB_CONFIG = { x: 1477, startY: 166, width: 59, height: 125 };
 
@@ -63,6 +67,10 @@ const ImageBlock = ({ block, isSelected, onSelect, onChange }) => {
 };
 
 export default function PlannerCanvas() {
+  // --- 2. GATEKEEPER STATE ---
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [licenseInput, setLicenseInput] = useState("");
+
   const [pages, setPages] = useState([{ id: "p1", name: "Planner Start", section: "JAN", type: "NONE", blocks: [], bg: "backgroundwithtabs.png" }]);
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState(null);
@@ -74,7 +82,14 @@ export default function PlannerCanvas() {
   const selectedBlock = currentPage.blocks.find(b => b.id === selectedId);
   const [bgImg, bgStatus] = useImage(`/${currentPage.bg}`, "anonymous");
 
-  // --- BACKGROUND LOGIC ---
+  const checkLicense = () => {
+    if (VALID_KEYS.includes(licenseInput.trim().toUpperCase())) {
+      setIsUnlocked(true);
+    } else {
+      alert("Invalid License Key. Please check your Etsy order for the correct code!");
+    }
+  };
+
   const changeBackground = (bgFileName, applyToAll = false) => {
     setPages(prev => prev.map((p, idx) => {
       if (applyToAll || idx === currentPageIndex) {
@@ -205,6 +220,32 @@ export default function PlannerCanvas() {
     pdf.save("Therapist_Planner_2026.pdf");
   };
 
+  // --- 3. THE LOCK SCREEN RENDER ---
+  if (!isUnlocked) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f0f2f5', fontFamily: 'sans-serif' }}>
+        <div style={{ background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '400px' }}>
+          <h1 style={{ color: '#4f46e5', marginBottom: '10px' }}>Therapist Planner Studio</h1>
+          <p style={{ color: '#666', marginBottom: '25px' }}>Enter your Etsy license key to unlock your professional planner designer.</p>
+          <input 
+            type="text" 
+            placeholder="Enter Key Here..." 
+            value={licenseInput}
+            onChange={(e) => setLicenseInput(e.target.value)}
+            style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px', boxSizing: 'border-box' }}
+          />
+          <button 
+            onClick={checkLicense}
+            style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '16px' }}
+          >
+            Unlock Access
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- 4. THE ACTUAL PLANNER RENDER (Only visible if isUnlocked is true) ---
   return (
     <div style={{ display: "flex", height: "100vh", background: "#f0f2f5", overflow: "hidden" }}>
       {exportProgress !== null && (
@@ -231,7 +272,7 @@ export default function PlannerCanvas() {
             </div>
         )}
 
-        {/* --- NEW BACKGROUND SECTION --- */}
+        {/* --- BACKGROUND SECTION --- */}
         <SectionTitle> Page Backgrounds</SectionTitle>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", marginBottom: "10px" }}>
             <button onClick={() => changeBackground('backgroundwithtabs.png')} style={smallBtn}>Standard</button>
