@@ -290,6 +290,17 @@ export default function PlannerCanvas() {
           <LibraryBtn key={temp} onClick={() => applyStarter(temp)}>{temp.split('template')[0]}</LibraryBtn>
         ))}
 
+        <SectionTitle>Headers</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <LibraryBtn onClick={() => addBlock("sunstartheader.svg")}>Sun Week Strip</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("monstartheader.svg")}>Mon Week Strip</LibraryBtn>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2px", marginTop:'5px' }}>
+                {["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].map(m => (
+                    <button key={m} onClick={() => addBlock(`${m}header.svg`)} style={{fontSize:'8px', padding:'4px'}}>{m.toUpperCase()}</button>
+                ))}
+            </div>
+        </div>
+
         <SectionTitle>Clinical Templates</SectionTitle>
         {["ThoughtLog.svg", "InsuranceTracker.svg", "BillingTracker.svg", "CEUTracker.svg", "DailySessions.svg", "GoalPlanner.svg", "WeeklySchedule.svg"].map(temp => (
           <LibraryBtn key={temp} onClick={() => addBlock(temp)}>{temp.split('.')[0]}</LibraryBtn>
