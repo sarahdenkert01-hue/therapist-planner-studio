@@ -137,15 +137,28 @@ export default function PlannerCanvas() {
       setPages(prev => [...prev, newPage]);
   };
 
-  const deleteBlock = () => {
+  const addBlankPage = () => {
+    const newPage = { 
+      id: Date.now().toString() + Math.random(), 
+      name: "New Page", 
+      section: "NONE", 
+      type: "NONE", 
+      blocks: [], 
+      bg: "backgroundwithtabs.png" 
+    };
+    setPages(prev => [...prev, newPage]);
+    setCurrentPageIndex(pages.length); // Automatically switch to the new page
+  };
+
+  function deleteBlock() {
     if (!selectedId) return;
     setPages(prev => {
-        const n = [...prev];
-        n[currentPageIndex].blocks = n[currentPageIndex].blocks.filter(b => b.id !== selectedId);
-        return n;
+      const n = [...prev];
+      n[currentPageIndex].blocks = n[currentPageIndex].blocks.filter(b => b.id !== selectedId);
+      return n;
     });
     setSelectedId(null);
-  };
+  }
 
   const clearPage = () => {
     if (!window.confirm("Clear all unlocked items?")) return;
