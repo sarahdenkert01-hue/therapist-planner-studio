@@ -66,60 +66,19 @@ const ImageBlock = ({ block, isSelected, onSelect, onChange }) => {
   );
 };
 
-const exportSmartPDF = async () => {
-    setSelectedId(null);
-    const pdf = new jsPDF("p", "pt", [WIDTH, HEIGHT]);
-    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+export default function PlannerCanvas() {
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [licenseInput, setLicenseInput] = useState("");
+  const [pages, setPages] = useState([{ id: "p1", name: "Planner Start", section: "JAN", type: "NONE", blocks: [], bg: "backgroundwithtabs.png" }]);
+  const [currentPageIndex, setCurrentPageIndex] = useState(0);
+  const [selectedId, setSelectedId] = useState(null);
+  const [startDay, setStartDay] = useState("sunday");
+  const [exportProgress, setExportProgress] = useState(null);
 
-    for (let i = 0; i < pages.length; i++) {
-      setExportProgress(Math.round(((i + 1) / pages.length) * 100));
-      setCurrentPageIndex(i);
-      
-      // Give the canvas time to render the high-res image
-      await new Promise(r => setTimeout(r, 600)); 
-      
-      const dataUrl = stageRef.current.toDataURL({ pixelRatio: 1.5, mimeType: "image/jpeg", quality: 0.85 });
-      if (i > 0) pdf.addPage([WIDTH, HEIGHT], "p");
-      pdf.addImage(dataUrl, "JPEG", 0, 0, WIDTH, HEIGHT, undefined, 'FAST');
-      
-      // --- TAB HYPERLINKS ---
-      months.forEach((m, idx) => {
-        // Search for a page that is either the correct TYPE or has the month in the NAME
-        const tIdx = pages.findIndex(pg => 
-          (pg.section === m && pg.type === "MONTH") || 
-          (pg.name.toUpperCase().includes(m) && pg.type !== "DAY")
-        );
-        
-        if (tIdx !== -1) {
-          pdf.link(TAB_CONFIG.x, TAB_CONFIG.startY + (idx * TAB_CONFIG.height), TAB_CONFIG.width, TAB_CONFIG.height, { pageNumber: tIdx + 1 });
-        }
-      });
-
-      // --- CALENDAR GRID HYPERLINKS ---
-      // Only runs if the current page being processed is a Monthly Overview
-      if (pages[i].type === "MONTH" || pages[i].name.toUpperCase().includes("OVERVIEW")) {
-        const mName = pages[i].section !== "NONE" ? pages[i].section : months.find(m => pages[i].name.toUpperCase().includes(m));
-        
-        if (mName) {
-          const offset = MONTH_OFFSETS[startDay][mName];
-          // Find the first "Day" page for this specific month
-          const firstDayIdx = pages.findIndex(pg => pg.section === mName && pg.type === "DAY");
-          
-          if (firstDayIdx !== -1) {
-            for (let d = 0; d < 31; d++) {
-              const slot = d + offset;
-              const x = GRID_CONFIG.startX + ((slot % 7) * GRID_CONFIG.sqWidth);
-              const y = GRID_CONFIG.startY + (Math.floor(slot / 7) * GRID_CONFIG.sqHeight);
-              
-              pdf.link(x, y, GRID_CONFIG.sqWidth, GRID_CONFIG.sqHeight, { pageNumber: firstDayIdx + d + 1 });
-            }
-          }
-        }
-      }
-    }
-    setExportProgress(null);
-    pdf.save("Therapist_Planner_2026.pdf");
-  };
+  const stageRef = useRef();
+  const currentPage = pages[currentPageIndex];
+  const selectedBlock = currentPage.blocks.find(b => b.id === selectedId);
+  const [bgImg, bgStatus] = useImage(`/${currentPage.bg}`, "anonymous");
 
   const checkLicense = () => {
     if (VALID_KEYS.includes(licenseInput.trim().toUpperCase())) {
@@ -254,16 +213,43 @@ const exportSmartPDF = async () => {
   const exportSmartPDF = async () => {
     setSelectedId(null);
     const pdf = new jsPDF("p", "pt", [WIDTH, HEIGHT]);
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+
     for (let i = 0; i < pages.length; i++) {
       setExportProgress(Math.round(((i + 1) / pages.length) * 100));
       setCurrentPageIndex(i);
-      await new Promise(r => setTimeout(r, 450)); 
+      await new Promise(r => setTimeout(r, 650)); 
+      
       const dataUrl = stageRef.current.toDataURL({ pixelRatio: 1.5, mimeType: "image/jpeg", quality: 0.85 });
       if (i > 0) pdf.addPage([WIDTH, HEIGHT], "p");
       pdf.addImage(dataUrl, "JPEG", 0, 0, WIDTH, HEIGHT, undefined, 'FAST');
+      
+      months.forEach((m, idx) => {
+        const tIdx = pages.findIndex(pg => 
+          (pg.section === m && pg.type === "MONTH") || 
+          (pg.name.toUpperCase().includes(m) && pg.type !== "DAY")
+        );
+        if (tIdx !== -1) pdf.link(TAB_CONFIG.x, TAB_CONFIG.startY + (idx * TAB_CONFIG.height), TAB_CONFIG.width, TAB_CONFIG.height, { pageNumber: tIdx + 1 });
+      });
+
+      if (pages[i].type === "MONTH" || pages[i].name.toUpperCase().includes("OVERVIEW")) {
+        const mName = pages[i].section !== "NONE" ? pages[i].section : months.find(m => pages[i].name.toUpperCase().includes(m));
+        if (mName) {
+          const offset = MONTH_OFFSETS[startDay][mName];
+          const firstDayIdx = pages.findIndex(pg => pg.section === mName && pg.type === "DAY");
+          if (firstDayIdx !== -1) {
+            for (let d = 0; d < 31; d++) {
+              const slot = d + offset;
+              const x = GRID_CONFIG.startX + ((slot % 7) * GRID_CONFIG.sqWidth);
+              const y = GRID_CONFIG.startY + (Math.floor(slot / 7) * GRID_CONFIG.sqHeight);
+              pdf.link(x, y, GRID_CONFIG.sqWidth, GRID_CONFIG.sqHeight, { pageNumber: firstDayIdx + d + 1 });
+            }
+          }
+        }
+      }
     }
     setExportProgress(null);
-    pdf.save("Therapist_Planner_2026.pdf");
+    pdf.save("Therapist_Planner_Studio_2026.pdf");
   };
 
   if (!isUnlocked) {
@@ -271,8 +257,8 @@ const exportSmartPDF = async () => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f0f2f5', fontFamily: 'sans-serif' }}>
         <div style={{ background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '400px' }}>
           <h1 style={{ color: '#4f46e5' }}>Planner Studio</h1>
-          <input type="text" placeholder="License Key" value={licenseInput} onChange={(e) => setLicenseInput(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '2px solid #ddd' }} />
-          <button onClick={checkLicense} style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>Unlock Access</button>
+          <input type="text" placeholder="License Key" value={licenseInput} onChange={(e) => setLicenseInput(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }} />
+          <button onClick={checkLicense} style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Unlock Access</button>
         </div>
       </div>
     );
@@ -297,7 +283,7 @@ const exportSmartPDF = async () => {
         )}
 
         <SectionTitle> Page Backgrounds</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", marginBottom: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", marginBottom: "5px" }}>
             <button onClick={() => changeBackground('backgroundwithtabs.png')} style={smallBtn}>Standard</button>
             <button onClick={() => changeBackground('glitter.png')} style={smallBtn}>Glitter</button>
             <button onClick={() => changeBackground('mermaid.png')} style={smallBtn}>Mermaid</button>
@@ -307,7 +293,7 @@ const exportSmartPDF = async () => {
             <button onClick={() => changeBackground('cheetah.png')} style={smallBtn}>Cheetah</button>
             <button onClick={() => changeBackground('gingham.png')} style={smallBtn}>Gingham</button>
         </div>
-        <button onClick={() => changeBackground(currentPage.bg, true)} style={{...smallBtn, width:'100%', background:'#e1f5fe', color:'#01579b'}}>Apply current to ALL pages</button>
+        <button onClick={() => changeBackground(currentPage.bg, true)} style={{...smallBtn, width:'100%', background:'#e1f5fe', color:'#01579b', marginBottom:'15px'}}>Apply Background to ALL</button>
 
         <SectionTitle>Page Management</SectionTitle>
         <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
@@ -320,7 +306,7 @@ const exportSmartPDF = async () => {
         <div style={{ maxHeight: "150px", overflowY: "auto", border: '1px solid #eee', borderRadius: '4px', marginBottom: '15px' }}>
           {pages.map((p, idx) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', background: currentPageIndex === idx ? "#f8fafc" : "transparent", borderBottom: '1px solid #eee' }}>
-              <button onClick={() => setCurrentPageIndex(idx)} style={{ ...pageBtn(currentPageIndex === idx), flex: 1 }}>{idx + 1}. {p.name}</button>
+              <button onClick={() => setCurrentPageIndex(idx)} style={{ ...pageBtn(currentPageIndex === idx), flex: 1, border:'none' }}>{idx + 1}. {p.name}</button>
               <button onClick={(e) => { e.stopPropagation(); renamePage(idx); }} style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>✏️</button>
             </div>
           ))}
@@ -356,13 +342,22 @@ const exportSmartPDF = async () => {
             <LibraryBtn onClick={() => addBlock("sunstartheader.svg")}>Sun Week Strip</LibraryBtn>
             <LibraryBtn onClick={() => addBlock("monstartheader.svg")}>Mon Week Strip</LibraryBtn>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2px", marginTop:'5px' }}>
-                {["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].map(m => (
-                    <button key={m} onClick={() => addBlock(`${m}header.svg`)} style={{fontSize:'8px', padding:'4px'}}>{m.toUpperCase()}</button>
-                ))}
+                <button onClick={() => addBlock("janheader.svg")} style={headerGridBtn}>JAN</button>
+                <button onClick={() => addBlock("febheader.svg")} style={headerGridBtn}>FEB</button>
+                <button onClick={() => addBlock("marheader.svg")} style={headerGridBtn}>MAR</button>
+                <button onClick={() => addBlock("aprheader.svg")} style={headerGridBtn}>APR</button>
+                <button onClick={() => addBlock("mayheader.svg")} style={headerGridBtn}>MAY</button>
+                <button onClick={() => addBlock("junheader.svg")} style={headerGridBtn}>JUN</button>
+                <button onClick={() => addBlock("julheader.svg")} style={headerGridBtn}>JUL</button>
+                <button onClick={() => addBlock("augheader.svg")} style={headerGridBtn}>AUG</button>
+                <button onClick={() => addBlock("sepheader.svg")} style={headerGridBtn}>SEP</button>
+                <button onClick={() => addBlock("octheader.svg")} style={headerGridBtn}>OCT</button>
+                <button onClick={() => addBlock("novheader.svg")} style={headerGridBtn}>NOV</button>
+                <button onClick={() => addBlock("decheader.svg")} style={headerGridBtn}>DEC</button>
             </div>
         </div>
 
-       <SectionTitle> Clinical Templates</SectionTitle>
+        <SectionTitle> Clinical Templates</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
           <LibraryBtn onClick={() => addBlock("ThoughtLog.svg")}>Thought Log</LibraryBtn>
           <LibraryBtn onClick={() => addBlock("InsuranceTracker.svg")}>Insurance Tracker</LibraryBtn>
@@ -443,6 +438,8 @@ const exportSmartPDF = async () => {
   );
 }
 
+// --- STYLES ---
+const headerGridBtn = { fontSize: '8px', padding: '4px', cursor: 'pointer', background: '#fff', border: '1px solid #ddd', borderRadius: '4px' };
 const smallBtn = { padding: '5px', fontSize: '10px', cursor: 'pointer', background: '#fff', border: '1px solid #ddd', borderRadius: '4px' };
 const overlayStyle = { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center" };
 const progressCard = { background: "white", padding: "30px", borderRadius: "12px", textAlign: "center" };
