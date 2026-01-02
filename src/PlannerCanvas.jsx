@@ -135,6 +135,7 @@ export default function PlannerCanvas() {
       newPage.id = Date.now().toString() + Math.random();
       newPage.name = currentPage.name + " (Copy)";
       setPages(prev => [...prev, newPage]);
+      setCurrentPageIndex(pages.length); 
   };
 
   const addBlankPage = () => {
@@ -147,7 +148,7 @@ export default function PlannerCanvas() {
       bg: "backgroundwithtabs.png" 
     };
     setPages(prev => [...prev, newPage]);
-    setCurrentPageIndex(pages.length); // Automatically switch to the new page
+    setCurrentPageIndex(pages.length);
   };
 
   function deleteBlock() {
@@ -389,6 +390,7 @@ export default function PlannerCanvas() {
 
         <SectionTitle> Page Management</SectionTitle>
         <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
+            <button onClick={addBlankPage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#4f46e5', color:'white', border:'none', borderRadius:'4px', cursor:'pointer'}}>➕ Add Page</button>
             <button onClick={duplicatePage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', cursor:'pointer'}}>👯 Duplicate</button>
             <button onClick={clearPage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', color: '#ff4d4f', cursor:'pointer'}}>🧹 Clear</button>
         </div>
