@@ -151,6 +151,17 @@ export default function PlannerCanvas() {
     setCurrentPageIndex(pages.length);
   };
 
+  const renamePage = (index) => {
+    const newName = window.prompt("Enter new page name:", pages[index].name);
+    if (newName && newName.trim() !== "") {
+      setPages(prev => {
+        const n = [...prev];
+        n[index].name = newName.trim();
+        return n;
+      });
+    }
+  };
+
   function deleteBlock() {
     if (!selectedId) return;
     setPages(prev => {
@@ -390,14 +401,30 @@ export default function PlannerCanvas() {
         </div>
 
         <SectionTitle> Page Management</SectionTitle>
-        <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
-            <button onClick={addBlankPage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#4f46e5', color:'white', border:'none', borderRadius:'4px', cursor:'pointer'}}>➕ Add Page</button>
-            <button onClick={duplicatePage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', cursor:'pointer'}}>👯 Duplicate</button>
-            <button onClick={clearPage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', color: '#ff4d4f', cursor:'pointer'}}>🧹 Clear</button>
+        <div style={{display:'flex', gap:'5px', marginBottom:'10px'}}>
+            <button onClick={addBlankPage} style={{flex:1.2, padding:'8px', fontSize:'11px', background:'#4f46e5', color:'white', border:'none', borderRadius:'4px', cursor:'pointer'}}>➕ Add Page</button>
+            <button onClick={duplicatePage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', borderRadius:'4px', cursor:'pointer'}}>👯 Copy</button>
+            <button onClick={clearPage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', color: '#ff4d4f', borderRadius:'4px', cursor:'pointer'}}>🧹 Clear</button>
         </div>
-        <div style={{ maxHeight: "150px", overflowY: "auto", border: '1px solid #eee' }}>
+        
+        {/* UPDATED PAGE LIST WITH RENAME BUTTON */}
+        <div style={{ maxHeight: "200px", overflowY: "auto", border: '1px solid #eee', borderRadius: '4px' }}>
           {pages.map((p, idx) => (
-            <button key={p.id} onClick={() => setCurrentPageIndex(idx)} style={pageBtn(currentPageIndex === idx)}>{idx + 1}. {p.name}</button>
+            <div key={p.id} style={{ display: 'flex', alignItems: 'center', background: currentPageIndex === idx ? "#f8fafc" : "transparent", borderBottom: '1px solid #eee' }}>
+              <button 
+                onClick={() => setCurrentPageIndex(idx)} 
+                style={{ ...pageBtn(currentPageIndex === idx), flex: 1, border: 'none' }}
+              >
+                {idx + 1}. {p.name}
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); renamePage(idx); }} 
+                style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px', opacity: 0.6 }}
+                title="Rename Page"
+              >
+                ✏️
+              </button>
+            </div>
           ))}
         </div>
 
