@@ -103,13 +103,23 @@ export default function PlannerCanvas() {
     const id = Date.now().toString() + Math.random();
     let width = 600; let height = 600;
     let x = 400; let y = 400;
+    let isLocked = false;
 
-    if (fileName.includes('header')) {
+    // AUTO-SIZE COVERS TO FULL CANVAS
+    if (fileName.toLowerCase().includes('cover')) {
+      width = WIDTH; 
+      height = HEIGHT;
+      x = 0; 
+      y = 0;
+      isLocked = true; // Auto-lock for perfect alignment
+    } 
+    // AUTO-SIZE HEADERS
+    else if (fileName.includes('header')) {
         if (fileName.includes('start')) { width = 1167; height = 100; x = 253; y = 220; } 
         else { width = 450; height = 100; x = 540; y = 100; }
     }
 
-    const newBlock = { id, src: `/${fileName}`, x, y, width, height, locked: false };
+    const newBlock = { id, src: `/${fileName}`, x, y, width, height, locked: isLocked };
     setPages(prev => {
       const n = [...prev];
       n[currentPageIndex].blocks.push(newBlock);
