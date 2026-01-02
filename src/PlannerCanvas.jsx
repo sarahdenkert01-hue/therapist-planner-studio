@@ -140,6 +140,22 @@ export default function PlannerCanvas() {
     setSelectedId(id);
   };
 
+  const applyLayoutToNextPage = () => {
+    if (currentPageIndex >= pages.length - 1) {
+      alert("This is the last page. Add a new page first!");
+      return;
+    }
+    const currentLayout = JSON.parse(JSON.stringify(currentPage.blocks));
+    const currentBg = currentPage.bg;
+    setPages(prev => prev.map((p, idx) => {
+      if (idx === currentPageIndex + 1) {
+        return { ...p, blocks: currentLayout, bg: currentBg };
+      }
+      return p;
+    }));
+    setCurrentPageIndex(currentPageIndex + 1);
+  };
+
   const duplicatePage = () => {
       const newPage = JSON.parse(JSON.stringify(currentPage));
       newPage.id = Date.now().toString() + Math.random();
