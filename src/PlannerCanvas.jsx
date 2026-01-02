@@ -317,9 +317,10 @@ export default function PlannerCanvas() {
             <LibraryBtn onClick={() => applyStarter('annualplannertemplate.svg')}>Annual Planner</LibraryBtn>
             <LibraryBtn onClick={() => applyStarter('dailyscheduletemplate.svg')}>Daily Schedule</LibraryBtn>
             <LibraryBtn onClick={() => applyStarter('taskplannertemplate.svg')}>Task Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('taskplantemplate.svg')}>To-Do Planner</LibraryBtn>
             <LibraryBtn onClick={() => applyStarter('weeklyplantemplate.svg')}>Weekly Planner</LibraryBtn>
             <LibraryBtn onClick={() => applyStarter('weekscheduletemplate.svg')}>Weekly Session Schedule</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('weeltodotemplate.svg')}>Weekly To-Do</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('weektodotemplate.svg')}>Weekly To-Do</LibraryBtn>
             <LibraryBtn onClick={() => applyStarter('yearoverviewtemplate.svg')}>Yearly Overview</LibraryBtn>
             <LibraryBtn onClick={() => applyStarter('yearpixelstemplate.svg')}>Year in Pixels</LibraryBtn>
         </div>
