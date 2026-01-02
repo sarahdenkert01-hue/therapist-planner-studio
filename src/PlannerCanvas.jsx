@@ -66,19 +66,60 @@ const ImageBlock = ({ block, isSelected, onSelect, onChange }) => {
   );
 };
 
-export default function PlannerCanvas() {
-  const [isUnlocked, setIsUnlocked] = useState(false);
-  const [licenseInput, setLicenseInput] = useState("");
-  const [pages, setPages] = useState([{ id: "p1", name: "Planner Start", section: "JAN", type: "NONE", blocks: [], bg: "backgroundwithtabs.png" }]);
-  const [currentPageIndex, setCurrentPageIndex] = useState(0);
-  const [selectedId, setSelectedId] = useState(null);
-  const [startDay, setStartDay] = useState("sunday");
-  const [exportProgress, setExportProgress] = useState(null);
+const exportSmartPDF = async () => {
+    setSelectedId(null);
+    const pdf = new jsPDF("p", "pt", [WIDTH, HEIGHT]);
+    const months = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
-  const stageRef = useRef();
-  const currentPage = pages[currentPageIndex];
-  const selectedBlock = currentPage.blocks.find(b => b.id === selectedId);
-  const [bgImg, bgStatus] = useImage(`/${currentPage.bg}`, "anonymous");
+    for (let i = 0; i < pages.length; i++) {
+      setExportProgress(Math.round(((i + 1) / pages.length) * 100));
+      setCurrentPageIndex(i);
+      
+      // Give the canvas time to render the high-res image
+      await new Promise(r => setTimeout(r, 600)); 
+      
+      const dataUrl = stageRef.current.toDataURL({ pixelRatio: 1.5, mimeType: "image/jpeg", quality: 0.85 });
+      if (i > 0) pdf.addPage([WIDTH, HEIGHT], "p");
+      pdf.addImage(dataUrl, "JPEG", 0, 0, WIDTH, HEIGHT, undefined, 'FAST');
+      
+      // --- TAB HYPERLINKS ---
+      months.forEach((m, idx) => {
+        // Search for a page that is either the correct TYPE or has the month in the NAME
+        const tIdx = pages.findIndex(pg => 
+          (pg.section === m && pg.type === "MONTH") || 
+          (pg.name.toUpperCase().includes(m) && pg.type !== "DAY")
+        );
+        
+        if (tIdx !== -1) {
+          pdf.link(TAB_CONFIG.x, TAB_CONFIG.startY + (idx * TAB_CONFIG.height), TAB_CONFIG.width, TAB_CONFIG.height, { pageNumber: tIdx + 1 });
+        }
+      });
+
+      // --- CALENDAR GRID HYPERLINKS ---
+      // Only runs if the current page being processed is a Monthly Overview
+      if (pages[i].type === "MONTH" || pages[i].name.toUpperCase().includes("OVERVIEW")) {
+        const mName = pages[i].section !== "NONE" ? pages[i].section : months.find(m => pages[i].name.toUpperCase().includes(m));
+        
+        if (mName) {
+          const offset = MONTH_OFFSETS[startDay][mName];
+          // Find the first "Day" page for this specific month
+          const firstDayIdx = pages.findIndex(pg => pg.section === mName && pg.type === "DAY");
+          
+          if (firstDayIdx !== -1) {
+            for (let d = 0; d < 31; d++) {
+              const slot = d + offset;
+              const x = GRID_CONFIG.startX + ((slot % 7) * GRID_CONFIG.sqWidth);
+              const y = GRID_CONFIG.startY + (Math.floor(slot / 7) * GRID_CONFIG.sqHeight);
+              
+              pdf.link(x, y, GRID_CONFIG.sqWidth, GRID_CONFIG.sqHeight, { pageNumber: firstDayIdx + d + 1 });
+            }
+          }
+        }
+      }
+    }
+    setExportProgress(null);
+    pdf.save("Therapist_Planner_2026.pdf");
+  };
 
   const checkLicense = () => {
     if (VALID_KEYS.includes(licenseInput.trim().toUpperCase())) {
@@ -255,13 +296,18 @@ export default function PlannerCanvas() {
             </div>
         )}
 
-        <SectionTitle>Backgrounds & Themes</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", marginBottom: "5px" }}>
-            {['backgroundwithtabs.png', 'glitter.png', 'mermaid.png', 'neutral.png', 'rainbow.png', 'marble.png', 'cheetah.png', 'gingham.png'].map(bg => (
-              <button key={bg} onClick={() => changeBackground(bg)} style={smallBtn}>{bg.split('.')[0]}</button>
-            ))}
+        <SectionTitle> Page Backgrounds</SectionTitle>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", marginBottom: "10px" }}>
+            <button onClick={() => changeBackground('backgroundwithtabs.png')} style={smallBtn}>Standard</button>
+            <button onClick={() => changeBackground('glitter.png')} style={smallBtn}>Glitter</button>
+            <button onClick={() => changeBackground('mermaid.png')} style={smallBtn}>Mermaid</button>
+            <button onClick={() => changeBackground('neutral.png')} style={smallBtn}>Neutral</button>
+            <button onClick={() => changeBackground('rainbow.png')} style={smallBtn}>Rainbow</button>
+            <button onClick={() => changeBackground('marble.png')} style={smallBtn}>Marble</button>
+            <button onClick={() => changeBackground('cheetah.png')} style={smallBtn}>Cheetah</button>
+            <button onClick={() => changeBackground('gingham.png')} style={smallBtn}>Gingham</button>
         </div>
-        <button onClick={() => changeBackground(currentPage.bg, true)} style={{...smallBtn, width:'100%', background:'#e1f5fe', color:'#01579b', marginBottom:'15px'}}>Apply Background to ALL</button>
+        <button onClick={() => changeBackground(currentPage.bg, true)} style={{...smallBtn, width:'100%', background:'#e1f5fe', color:'#01579b'}}>Apply current to ALL pages</button>
 
         <SectionTitle>Page Management</SectionTitle>
         <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
@@ -280,15 +326,30 @@ export default function PlannerCanvas() {
           ))}
         </div>
 
-        <SectionTitle>Planner Covers</SectionTitle>
-        {['standardcover.png', 'glittercover.png', 'mermaidcover.png', 'neutralcover.png', 'rainbowcover.png', 'marblecover.png', 'cheetahcover.png', 'ginghamcover.png'].map(cov => (
-          <LibraryBtn key={cov} onClick={() => addBlock(cov)}>{cov.split('cover')[0].toUpperCase()}</LibraryBtn>
-        ))}
+        <SectionTitle> Planner Cover</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <LibraryBtn onClick={() => addBlock("standardcover.png")}>Standard</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("glittercover.png")}>Glitter</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("mermaidcover.png")}>Mermaid</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("neutralcover.png")}>Neutral</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("rainbowcover.png")}>Rainbow</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("marblecover.png")}>Marble</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("cheetahcover.png")}>Cheetah</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("ginghamcover.png")}>Gingham</LibraryBtn>
+        </div>
 
-        <SectionTitle>Starter Layouts</SectionTitle>
-        {['annualplannertemplate.svg', 'dailyscheduletemplate.svg', 'taskplannertemplate.svg', 'taskplantemplate.svg', 'weeklyplantemplate.svg', 'weekscheduletemplate.svg', 'weektodotemplate.svg', 'yearoverviewtemplate.svg', 'yearpixelstemplate.svg'].map(temp => (
-          <LibraryBtn key={temp} onClick={() => applyStarter(temp)}>{temp.split('template')[0]}</LibraryBtn>
-        ))}
+        <SectionTitle> Starter Layouts</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <LibraryBtn onClick={() => applyStarter('annualplannertemplate.svg')}>Annual Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('dailyscheduletemplate.svg')}>Daily Schedule</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('taskplannertemplate.svg')}>Task Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('taskplantemplate.svg')}>To-Do Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('weeklyplantemplate.svg')}>Weekly Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('weekscheduletemplate.svg')}>Weekly Session Schedule</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('weektodotemplate.svg')}>Weekly To-Do</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('yearoverviewtemplate.svg')}>Yearly Overview</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('yearpixelstemplate.svg')}>Year in Pixels</LibraryBtn>
+        </div>
 
         <SectionTitle>Headers</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
@@ -301,25 +362,47 @@ export default function PlannerCanvas() {
             </div>
         </div>
 
-        <SectionTitle>Clinical Templates</SectionTitle>
-        {["ThoughtLog.svg", "InsuranceTracker.svg", "BillingTracker.svg", "CEUTracker.svg", "DailySessions.svg", "GoalPlanner.svg", "WeeklySchedule.svg"].map(temp => (
-          <LibraryBtn key={temp} onClick={() => addBlock(temp)}>{temp.split('.')[0]}</LibraryBtn>
-        ))}
+       <SectionTitle> Clinical Templates</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <LibraryBtn onClick={() => addBlock("ThoughtLog.svg")}>Thought Log</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("InsuranceTracker.svg")}>Insurance Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("BillingTracker.svg")}>Billing Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("CEUTracker.svg")}>CEU Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("DailySessions.svg")}>Daily Sessions</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("GoalPlanner.svg")}>Goal Planner</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("WeeklySchedule.svg")}>Weekly Schedule</LibraryBtn>
+        </div>
 
-        <SectionTitle>Note Templates</SectionTitle>
-        {["BulletNotes.svg", "NoteLines.svg", "CornellNotes.svg", "TopicNotes.svg", "sessionnotes.svg"].map(temp => (
-          <LibraryBtn key={temp} onClick={() => addBlock(temp)}>{temp.split('.')[0]}</LibraryBtn>
-        ))}
+        <SectionTitle> Note Templates</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+          <LibraryBtn onClick={() => addBlock("BulletNotes.svg")}>Bullet Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("NoteLines.svg")}>Notebook Lines</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("CornellNotes.svg")}>Cornell Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("TopicNotes.svg")}>Topic Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("sessionnotes.svg")}>Session Notes</LibraryBtn>
+        </div>
 
-        <SectionTitle>Trackers</SectionTitle>
-        {["HabitTracker.svg", "MoodTracker.svg", "WaterTracker.svg", "Tracker.svg", "EnergyTracker.svg"].map(temp => (
-          <LibraryBtn key={temp} onClick={() => addBlock(temp)}>{temp.split('.')[0]}</LibraryBtn>
-        ))}
+        <SectionTitle> Trackers</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <LibraryBtn onClick={() => addBlock("HabitTracker.svg")}>Habit Tracker</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("MoodTracker.svg")}>Mood Tracker</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("WaterTracker.svg")}>Water Tracker</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("Tracker.svg")}>Basic Tracker</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("EnergyTracker.svg")}>Energy Tracker</LibraryBtn>
+        </div>
 
-        <SectionTitle>Other Templates</SectionTitle>
-        {["DailySchedule.svg", "ToDoList.svg", "Grid.svg", "MonthlyCalendar.svg", "MonthlyReview.svg", "Priorities.svg", "Reminder.svg", "WeeklyToDo.svg", "WeeklyReview.svg"].map(temp => (
-          <LibraryBtn key={temp} onClick={() => addBlock(temp)}>{temp.split('.')[0]}</LibraryBtn>
-        ))}
+        <SectionTitle> Other Templates</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <LibraryBtn onClick={() => addBlock("DailySchedule.svg")}>Daily Schedule</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("ToDoList.svg")}>To-Do List</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("Grid.svg")}>Grid Block</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("MonthlyCalendar.svg")}>Mini Month</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("MonthlyReview.svg")}>Monthly Review</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("Priorities.svg")}>Priorities</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("Reminder.svg")}>Reminder</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("WeeklyToDo.svg")}>Weekly To Do</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("WeeklyReview.svg")}>Weekly Review</LibraryBtn>
+        </div>
 
         <SectionTitle>Month Bundles</SectionTitle>
         <div style={{ display: "flex", gap: "5px", marginBottom: "10px" }}>
