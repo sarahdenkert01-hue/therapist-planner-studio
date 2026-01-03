@@ -95,15 +95,22 @@ export default function PlannerCanvas() {
     }));
   };
 
-  const addBlock = (fileName) => {
+  const addBlock = (fileName, size = "full") => {
     const id = Date.now().toString() + Math.random();
-    let width = 600, height = 600, x = 400, y = 400;
+    let width = 1167, height = 1800, x = 253, y = 150;
     let isLocked = false;
 
+    // Sizing Logic
     if (fileName.toLowerCase().includes('cover')) {
       width = WIDTH; height = HEIGHT; x = 0; y = 0; isLocked = true;
+    } else if (size === "half") {
+      width = 1167; height = 900;
+    } else if (size === "quarter") {
+      width = 583; height = 900;
+    } else if (size === "eighth") {
+      width = 583; height = 450;
     } else if (fileName.includes('header')) {
-        if (fileName.includes('start')) { width = 1167; height = 100; x = 253; y = 220; } 
+        if (fileName.includes('start')) { width = 1167; height = 100; y = 220; } 
         else { width = 450; height = 100; x = 540; y = 100; }
     }
 
@@ -128,7 +135,7 @@ export default function PlannerCanvas() {
 
   const applyLayoutToNextPage = () => {
     if (currentPageIndex >= pages.length - 1) {
-      alert("This is the last page. Add a new page first!");
+      alert("Add a new page first!");
       return;
     }
     const currentLayout = JSON.parse(JSON.stringify(currentPage.blocks));
@@ -165,7 +172,7 @@ export default function PlannerCanvas() {
     }
   };
 
-  function deleteBlock() {
+  const deleteBlock = () => {
     if (!selectedId) return;
     setPages(prev => {
       const n = [...prev];
@@ -173,10 +180,10 @@ export default function PlannerCanvas() {
       return n;
     });
     setSelectedId(null);
-  }
+  };
 
   const clearPage = () => {
-    if (!window.confirm("Clear all items?")) return;
+    if (!window.confirm("Clear all?")) return;
     setPages(prev => {
         const n = [...prev];
         n[currentPageIndex].blocks = n[currentPageIndex].blocks.filter(b => b.locked);
@@ -219,16 +226,12 @@ export default function PlannerCanvas() {
       setExportProgress(Math.round(((i + 1) / pages.length) * 100));
       setCurrentPageIndex(i);
       await new Promise(r => setTimeout(r, 650)); 
-      
       const dataUrl = stageRef.current.toDataURL({ pixelRatio: 1.5, mimeType: "image/jpeg", quality: 0.85 });
       if (i > 0) pdf.addPage([WIDTH, HEIGHT], "p");
       pdf.addImage(dataUrl, "JPEG", 0, 0, WIDTH, HEIGHT, undefined, 'FAST');
       
       months.forEach((m, idx) => {
-        const tIdx = pages.findIndex(pg => 
-          (pg.section === m && pg.type === "MONTH") || 
-          (pg.name.toUpperCase().includes(m) && pg.type !== "DAY")
-        );
+        const tIdx = pages.findIndex(pg => (pg.section === m && pg.type === "MONTH") || (pg.name.toUpperCase().includes(m) && pg.type !== "DAY"));
         if (tIdx !== -1) pdf.link(TAB_CONFIG.x, TAB_CONFIG.startY + (idx * TAB_CONFIG.height), TAB_CONFIG.width, TAB_CONFIG.height, { pageNumber: tIdx + 1 });
       });
 
@@ -256,9 +259,9 @@ export default function PlannerCanvas() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f0f2f5', fontFamily: 'sans-serif' }}>
         <div style={{ background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '400px' }}>
-          <h1 style={{ color: '#4f46e5' }}>Planner Studio</h1>
-          <input type="text" placeholder="License Key" value={licenseInput} onChange={(e) => setLicenseInput(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }} />
-          <button onClick={checkLicense} style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Unlock Access</button>
+          <h1>Planner Studio</h1>
+          <input type="text" placeholder="License Key" value={licenseInput} onChange={(e) => setLicenseInput(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '2px solid #ddd' }} />
+          <button onClick={checkLicense} style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Unlock Access</button>
         </div>
       </div>
     );
@@ -277,42 +280,37 @@ export default function PlannerCanvas() {
         
         {selectedId && (
             <div style={{ marginBottom: '20px', padding: '10px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #eee' }}>
-                <button onClick={toggleLock} style={actionBtn}>{selectedBlock?.locked ? "🔓 Unlock Cover/Item" : "🔒 Lock Item"}</button>
+                <button onClick={toggleLock} style={actionBtn}>{selectedBlock?.locked ? "🔓 Unlock" : "🔒 Lock"}</button>
                 <button onClick={deleteBlock} style={{...actionBtn, color: '#ff4d4f', marginTop: '5px'}}>🗑️ Delete</button>
             </div>
         )}
 
-        <SectionTitle> Page Backgrounds</SectionTitle>
+        <SectionTitle>Backgrounds</SectionTitle>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", marginBottom: "5px" }}>
-            <button onClick={() => changeBackground('backgroundwithtabs.png')} style={smallBtn}>Standard</button>
-            <button onClick={() => changeBackground('glitter.png')} style={smallBtn}>Glitter</button>
-            <button onClick={() => changeBackground('mermaid.png')} style={smallBtn}>Mermaid</button>
-            <button onClick={() => changeBackground('neutral.png')} style={smallBtn}>Neutral</button>
-            <button onClick={() => changeBackground('rainbow.png')} style={smallBtn}>Rainbow</button>
-            <button onClick={() => changeBackground('marble.png')} style={smallBtn}>Marble</button>
-            <button onClick={() => changeBackground('cheetah.png')} style={smallBtn}>Cheetah</button>
-            <button onClick={() => changeBackground('gingham.png')} style={smallBtn}>Gingham</button>
+            {['backgroundwithtabs.png', 'glitter.png', 'mermaid.png', 'neutral.png', 'rainbow.png', 'marble.png', 'cheetah.png', 'gingham.png'].map(bg => (
+              <button key={bg} onClick={() => changeBackground(bg)} style={smallBtn}>{bg.split('.')[0]}</button>
+            ))}
         </div>
-        <button onClick={() => changeBackground(currentPage.bg, true)} style={{...smallBtn, width:'100%', background:'#e1f5fe', color:'#01579b', marginBottom:'15px'}}>Apply Background to ALL</button>
+        <button onClick={() => changeBackground(currentPage.bg, true)} style={{...smallBtn, width:'100%', background:'#e1f5fe', marginBottom:'15px'}}>Apply Background to ALL</button>
 
         <SectionTitle>Page Management</SectionTitle>
         <div style={{display:'flex', gap:'5px', marginBottom:'5px'}}>
-            <button onClick={addBlankPage} style={{flex:1.2, padding:'8px', fontSize:'11px', background:'#4f46e5', color:'white', border:'none', borderRadius:'4px'}}>➕ Add</button>
-            <button onClick={duplicatePage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', borderRadius:'4px'}}>👯 Copy</button>
-            <button onClick={clearPage} style={{flex:1, padding:'8px', fontSize:'11px', background:'#fff', border:'1px solid #ddd', color: '#ff4d4f', borderRadius:'4px'}}>🧹 Clear</button>
+            <button onClick={addBlankPage} style={smallBtn}>➕ Add</button>
+            <button onClick={duplicatePage} style={smallBtn}>👯 Copy</button>
+            <button onClick={clearPage} style={{...smallBtn, color: '#ff4d4f'}}>🧹 Clear</button>
         </div>
-        <button onClick={applyLayoutToNextPage} style={{width:'100%', padding:'10px', fontSize:'12px', background:'#4f46e5', color:'white', border:'none', borderRadius:'4px', fontWeight:'bold', marginBottom:'10px'}}>Apply Layout to Next →</button>
+        <button onClick={applyLayoutToNextPage} style={{width:'100%', padding:'10px', background:'#4f46e5', color:'white', border:'none', borderRadius:'4px', fontWeight:'bold', marginBottom:'10px'}}>Apply Layout to Next →</button>
 
         <div style={{ maxHeight: "150px", overflowY: "auto", border: '1px solid #eee', borderRadius: '4px', marginBottom: '15px' }}>
           {pages.map((p, idx) => (
             <div key={p.id} style={{ display: 'flex', alignItems: 'center', background: currentPageIndex === idx ? "#f8fafc" : "transparent", borderBottom: '1px solid #eee' }}>
-              <button onClick={() => setCurrentPageIndex(idx)} style={{ ...pageBtn(currentPageIndex === idx), flex: 1, border:'none' }}>{idx + 1}. {p.name}</button>
-              <button onClick={(e) => { e.stopPropagation(); renamePage(idx); }} style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12px' }}>✏️</button>
+              <button onClick={() => setCurrentPageIndex(idx)} style={{ ...pageBtn(currentPageIndex === idx), flex: 1, border: 'none' }}>{idx + 1}. {p.name}</button>
+              <button onClick={(e) => { e.stopPropagation(); renamePage(idx); }} style={{ padding: '8px', background: 'none', border: 'none', cursor: 'pointer' }}>✏️</button>
             </div>
           ))}
         </div>
 
-        <SectionTitle> Planner Cover</SectionTitle>
+        <SectionTitle>Planner Cover</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
             <LibraryBtn onClick={() => addBlock("standardcover.png")}>Standard</LibraryBtn>
             <LibraryBtn onClick={() => addBlock("glittercover.png")}>Glitter</LibraryBtn>
@@ -324,17 +322,20 @@ export default function PlannerCanvas() {
             <LibraryBtn onClick={() => addBlock("ginghamcover.png")}>Gingham</LibraryBtn>
         </div>
 
-        <SectionTitle> Starter Layouts</SectionTitle>
+        <SectionTitle>Full Page Templates</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <LibraryBtn onClick={() => applyStarter('annualplannertemplate.svg')}>Annual Planner</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('dailyscheduletemplate.svg')}>Daily Schedule</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('taskplannertemplate.svg')}>Task Planner</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('taskplantemplate.svg')}>To-Do Planner</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('weeklyplantemplate.svg')}>Weekly Planner</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('weekscheduletemplate.svg')}>Weekly Session Schedule</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('weektodotemplate.svg')}>Weekly To-Do</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('yearoverviewtemplate.svg')}>Yearly Overview</LibraryBtn>
-            <LibraryBtn onClick={() => applyStarter('yearpixelstemplate.svg')}>Year in Pixels</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('annualplantemp.svg')}>Annual Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('monstartyearoverviewtemp.svg')}>Monday Start Year Overview</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('sunstartyearoverviewtemp.svg')}>Sunday Start Year Overview</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('monstartweekplantemp.svg')}>Monday Start Weekly Plan</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('sunstartweekplantemp.svg')}>Sunday Start Weekly Plan</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('monstartweektemp.svg')}>Monday Start Weekly Session Schedule</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('sunstartweektemp.svg')}>Sunday Start Weekly Session Schedule</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('monthreviewtemp.svg')}>Monthly Review</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('taskplannertemp.svg')}>Task Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('listplannertemp.svg')}>To Do Planner</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('weektodotemp.svg')}>Weekly To-Do</LibraryBtn>
+            <LibraryBtn onClick={() => applyStarter('yearpixelstemp.svg')}>Year in Pixels</LibraryBtn>
         </div>
 
         <SectionTitle>Headers</SectionTitle>
@@ -342,68 +343,58 @@ export default function PlannerCanvas() {
             <LibraryBtn onClick={() => addBlock("sunstartheader.svg")}>Sun Week Strip</LibraryBtn>
             <LibraryBtn onClick={() => addBlock("monstartheader.svg")}>Mon Week Strip</LibraryBtn>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2px", marginTop:'5px' }}>
-                <button onClick={() => addBlock("janheader.svg")} style={headerGridBtn}>JAN</button>
-                <button onClick={() => addBlock("febheader.svg")} style={headerGridBtn}>FEB</button>
-                <button onClick={() => addBlock("marheader.svg")} style={headerGridBtn}>MAR</button>
-                <button onClick={() => addBlock("aprheader.svg")} style={headerGridBtn}>APR</button>
-                <button onClick={() => addBlock("mayheader.svg")} style={headerGridBtn}>MAY</button>
-                <button onClick={() => addBlock("junheader.svg")} style={headerGridBtn}>JUN</button>
-                <button onClick={() => addBlock("julheader.svg")} style={headerGridBtn}>JUL</button>
-                <button onClick={() => addBlock("augheader.svg")} style={headerGridBtn}>AUG</button>
-                <button onClick={() => addBlock("sepheader.svg")} style={headerGridBtn}>SEP</button>
-                <button onClick={() => addBlock("octheader.svg")} style={headerGridBtn}>OCT</button>
-                <button onClick={() => addBlock("novheader.svg")} style={headerGridBtn}>NOV</button>
-                <button onClick={() => addBlock("decheader.svg")} style={headerGridBtn}>DEC</button>
+                {["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"].map(m => (
+                    <button key={m} onClick={() => addBlock(`${m}header.svg`)} style={headerGridBtn}>{m.toUpperCase()}</button>
+                ))}
             </div>
         </div>
 
-        <SectionTitle> Clinical Templates</SectionTitle>
+        <SectionTitle>Clinical Templates</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <LibraryBtn onClick={() => addBlock("ThoughtLog.svg")}>Thought Log</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("InsuranceTracker.svg")}>Insurance Tracker</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("BillingTracker.svg")}>Billing Tracker</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("CEUTracker.svg")}>CEU Tracker</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("DailySessions.svg")}>Daily Sessions</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("GoalPlanner.svg")}>Goal Planner</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("WeeklySchedule.svg")}>Weekly Schedule</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("sessionnotetemp.svg", "full")}>Session Notes (Full)</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("billingtemp.svg", "full")}>Billing Tracker (Full)</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("ceutrackertemp.svg", "full")}>CEU Tracker (Full)</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("insurancetrackertemp.svg", "full")}>Insurance Tracker (Full)</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("thoughtlogtemp.svg", "full")}>Thought Log (Full)</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("goalplantemp.svg", "full")}>Goal Planner (Full)</LibraryBtn>
         </div>
 
-        <SectionTitle> Note Templates</SectionTitle>
+        <SectionTitle>Note Templates</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-          <LibraryBtn onClick={() => addBlock("BulletNotes.svg")}>Bullet Notes</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("NoteLines.svg")}>Notebook Lines</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("CornellNotes.svg")}>Cornell Notes</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("TopicNotes.svg")}>Topic Notes</LibraryBtn>
-          <LibraryBtn onClick={() => addBlock("sessionnotes.svg")}>Session Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("bulletnotetemp.svg", "full")}>Bullet Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("cornelltemp.svg", "full")}>Cornell Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("linedottemp.svg", "full")}>Lined Dot Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("dotlinetemp.svg", "full")}>Dot Lined Notes</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("notetemp.svg", "full")}>Standard Notes</LibraryBtn>
         </div>
 
-        <SectionTitle> Trackers</SectionTitle>
+        <SectionTitle>Half Page Blocks</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <LibraryBtn onClick={() => addBlock("HabitTracker.svg")}>Habit Tracker</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("MoodTracker.svg")}>Mood Tracker</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("WaterTracker.svg")}>Water Tracker</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("Tracker.svg")}>Basic Tracker</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("EnergyTracker.svg")}>Energy Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("monselfcare.svg", "half")}>Monday Start Self-Care Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("sunselfcare.svg", "half")}>Sunday Start Self-Care Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("prioritytemplate.svg", "half")}>Priority Planner</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("monstartweek.svg", "half")}>Monday Start Weekly Schedule</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("sunstartweek.svg", "half")}>Sunday Start Weekly Schedule</LibraryBtn>
         </div>
 
-        <SectionTitle> Other Templates</SectionTitle>
+         <SectionTitle>1/8 Page Blocks</SectionTitle>
         <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            <LibraryBtn onClick={() => addBlock("DailySchedule.svg")}>Daily Schedule</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("ToDoList.svg")}>To-Do List</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("Grid.svg")}>Grid Block</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("MonthlyCalendar.svg")}>Mini Month</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("MonthlyReview.svg")}>Monthly Review</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("Priorities.svg")}>Priorities</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("Reminder.svg")}>Reminder</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("WeeklyToDo.svg")}>Weekly To Do</LibraryBtn>
-            <LibraryBtn onClick={() => addBlock("WeeklyReview.svg")}>Weekly Review</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("hometodo.svg", "1/8")}>Home To Do List</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("worktodo.svg", "1/8")}>Work To Do List</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("monstartminimonth.svg", "1/8")}>Monday Start Mini Month</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("sunstartminimonth.svg", "1/8")}>Sunday Start Mini Month</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("monstarttracker.svg", "1/8")}>Monday Start Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("sunstarttracker.svg", "1/8")}>Sunday Start Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("smalldotgrid.svg", "1/8")}>Dot Grid</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("smallgrid.svg", "1/8")}>Grid</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("smallhabit.svg", "1/8")}>Habit Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("smallmoodtracker.svg", "1/8")}>Mood Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("smallreminder.svg", "1/8")}>Remiinder</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("smallwatertracker.svg", "1/8")}>Water Tracker</LibraryBtn>
+          <LibraryBtn onClick={() => addBlock("toppriorities.svg", "1/8")}>Top Priorities</LibraryBtn>
         </div>
 
         <SectionTitle>Month Bundles</SectionTitle>
-        <div style={{ display: "flex", gap: "5px", marginBottom: "10px" }}>
-          <button onClick={() => setStartDay("sunday")} style={toggleBtn(startDay === "sunday")}>Sun</button>
-          <button onClick={() => setStartDay("monday")} style={toggleBtn(startDay === "monday")}>Mon</button>
-        </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "4px" }}>
           {["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"].map(m => (
             <button key={m} onClick={() => addMonthBundle(m)} style={bundleBtn}>{m}</button>
@@ -438,9 +429,8 @@ export default function PlannerCanvas() {
   );
 }
 
-// --- STYLES ---
 const headerGridBtn = { fontSize: '8px', padding: '4px', cursor: 'pointer', background: '#fff', border: '1px solid #ddd', borderRadius: '4px' };
-const smallBtn = { padding: '5px', fontSize: '10px', cursor: 'pointer', background: '#fff', border: '1px solid #ddd', borderRadius: '4px' };
+const smallBtn = { padding: '8px', fontSize: '11px', flex: 1, cursor: 'pointer', background: '#fff', border: '1px solid #ddd', borderRadius: '4px' };
 const overlayStyle = { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.7)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center" };
 const progressCard = { background: "white", padding: "30px", borderRadius: "12px", textAlign: "center" };
 const progressBarBg = { width: "100%", height: "8px", background: "#eee", borderRadius: "4px", marginTop: "15px", overflow: "hidden" };
