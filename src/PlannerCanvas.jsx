@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { Stage, Layer, Rect, Group, Transformer, Image, Text } from "react-konva";
 import useImage from "use-image";
 import jsPDF from "jspdf";
+import { PDFDocument } from 'pdf-lib'; // <--- ADD THIS LINE
 
 const WIDTH = 1536; 
 const HEIGHT = 2048; 
@@ -255,6 +256,36 @@ export default function PlannerCanvas() {
     pdf.save("Therapist_Planner_Studio_2026.pdf");
   };
 
+const handleMasterMerge = async (files) => {
+    if (files.length === 0) return;
+    setExportProgress(10); 
+    try {
+      // PDFDocument comes from pdf-lib
+      const mergedPdf = await PDFDocument.create();
+      
+      for (let i = 0; i < files.length; i++) {
+        const arrayBuffer = await files[i].arrayBuffer();
+        const donorPdf = await PDFDocument.load(arrayBuffer);
+        const pagesToCopy = await mergedPdf.copyPages(donorPdf, donorPdf.getPageIndices());
+        pagesToCopy.forEach(page => mergedPdf.addPage(page));
+        
+        setExportProgress(Math.round(((i + 1) / files.length) * 100));
+      }
+
+      const pdfBytes = await mergedPdf.save();
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = "Final_Complete_Planner_2026.pdf";
+      link.click();
+      alert("Success! Your master planner is ready.");
+    } catch (err) {
+      console.error(err);
+      alert("Error merging PDFs. Ensure you selected valid PDF files.");
+    }
+    setExportProgress(null);
+  };
+
   if (!isUnlocked) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f0f2f5', fontFamily: 'sans-serif' }}>
@@ -433,6 +464,32 @@ export default function PlannerCanvas() {
                       n[currentPageIndex].blocks = n[currentPageIndex].blocks.map(b => b.id === block.id ? newAttrs : b);
                       return n;
                     });
+      <div style={{ 
+          marginTop: '20px', 
+          padding: '15px', 
+          background: '#f0fdf4', 
+          borderRadius: '10px', 
+          border: '1px solid #bbf7d0',
+          textAlign: 'center' 
+        }}>
+          <h4 style={{ fontSize: '11px', color: '#166534', margin: '0 0 5px 0', textTransform: 'uppercase' }}>
+            📦 Step 2: Master Merge
+          </h4>
+          <p style={{ fontSize: '10px', color: '#166534', marginBottom: '10px' }}>
+            Combine exported batches into one final planner.
+          </p>
+          <label style={{
+            display: 'block', padding: '10px', background: 'white', border: '2px dashed #bbf7d0',
+            borderRadius: '6px', cursor: 'pointer', fontSize: '11px', color: '#166534', fontWeight: 'bold'
+          }}>
+            📁 Select PDF Batches
+            <input 
+              type="file" multiple accept=".pdf" 
+              onChange={(e) => handleMasterMerge(Array.from(e.target.files))}
+              style={{ display: 'none' }}
+            />
+          </label>
+        </div>
                   }} />
                 ))}
               </Layer>
