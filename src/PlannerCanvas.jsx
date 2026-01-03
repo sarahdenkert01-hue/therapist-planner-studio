@@ -259,7 +259,7 @@ export default function PlannerCanvas() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f0f2f5', fontFamily: 'sans-serif' }}>
         <div style={{ background: 'white', padding: '40px', borderRadius: '15px', boxShadow: '0 8px 30px rgba(0,0,0,0.1)', textAlign: 'center', maxWidth: '400px' }}>
-          <h1>Planner Studio</h1>
+          <h1>Therapist Planner Studio</h1>
           <input type="text" placeholder="License Key" value={licenseInput} onChange={(e) => setLicenseInput(e.target.value)} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '2px solid #ddd' }} />
           <button onClick={checkLicense} style={{ width: '100%', padding: '12px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Unlock Access</button>
         </div>
@@ -285,11 +285,21 @@ export default function PlannerCanvas() {
             </div>
         )}
 
-        <SectionTitle>Backgrounds</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "5px", marginBottom: "5px" }}>
-            {['backgroundwithtabs.png', 'glitter.png', 'mermaid.png', 'neutral.png', 'rainbow.png', 'marble.png', 'cheetah.png', 'gingham.png'].map(bg => (
-              <button key={bg} onClick={() => changeBackground(bg)} style={smallBtn}>{bg.split('.')[0]}</button>
-            ))}
+       <SectionTitle>Planner Cover</SectionTitle>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+            <LibraryBtn onClick={() => addBlock("backgroundwithtabs.png")}>Standard</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("glitter.png")}>Glitter</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("mermaid.png")}>Mermaid</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("earthtones.png")}>Neutral</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("rainbow.png")}>Rainbow</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("marble.png")}>Marble</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("cheetah.png")}>Cheetah</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("gingham.png")}>Gingham</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("brown.svg")}>Brown Leather</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("blue.svg")}>Blue</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("green.svg")}>Green</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("burgundy.svg")}>Burgundy</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("lilac.svg")}>Lilac</LibraryBtn>
         </div>
         <button onClick={() => changeBackground(currentPage.bg, true)} style={{...smallBtn, width:'100%', background:'#e1f5fe', marginBottom:'15px'}}>Apply Background to ALL</button>
 
@@ -320,6 +330,11 @@ export default function PlannerCanvas() {
             <LibraryBtn onClick={() => addBlock("marblecover.png")}>Marble</LibraryBtn>
             <LibraryBtn onClick={() => addBlock("cheetahcover.png")}>Cheetah</LibraryBtn>
             <LibraryBtn onClick={() => addBlock("ginghamcover.png")}>Gingham</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("browncover.svg")}>Brown Leather</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("bluecover.svg")}>Blue</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("greencover.svg")}>Green</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("burgundycover.svg")}>Burgundy</LibraryBtn>
+            <LibraryBtn onClick={() => addBlock("lilaccover.svg")}>Lilac</LibraryBtn>
         </div>
 
         <SectionTitle>Full Page Templates</SectionTitle>
