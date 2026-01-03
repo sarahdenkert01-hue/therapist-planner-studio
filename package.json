@@ -17,6 +17,7 @@
     "react-dom": "^19.0.0",
     "react-konva": "^19.0.2",
     "use-image": "^1.1.4"
+    "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
